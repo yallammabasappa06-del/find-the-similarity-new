@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Document Similarity</title>
+</head>
+
+<body style="text-align:center; font-family:Arial">
+
+<!-- REGISTER -->
+<div id="registerPage">
+  <h2>Register</h2>
+  <input id="ruser" placeholder="username"><br><br>
+  <input id="rpass" placeholder="password" type="password"><br><br>
+  <button onclick="register()">Register</button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginPage" style="display:none">
+  <h2>Login</h2>
+  <input id="luser" placeholder="username"><br><br>
+  <input id="lpass" placeholder="password" type="password"><br><br>
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- UPLOAD -->
+<div id="uploadPage" style="display:none">
+  <h2>Upload File</h2>
+
+  <input type="file" id="fileInput"><br><br>
+  <button onclick="upload()">Upload</button>
+
+  <h3 id="compare"></h3>
+
+  <h3>Uploaded Files:</h3>
+  <ul id="fileList"></ul>
+
+  <h3 id="result"></h3>
+</div>
+
+<script>
+function show(page) {
+  document.getElementById("registerPage").style.display = "none";
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("uploadPage").style.display = "none";
+
+  document.getElementById(page).style.display = "block";
+}
+
+// REGISTER
+function register() {
+  fetch("/register", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      username: document.getElementById("ruser").value,
+      password: document.getElementById("rpass").value
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    alert(d.message);
+    show("loginPage");
+  });
+}
+
+// LOGIN
+function login() {
+  fetch("/login", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      username: document.getElementById("luser").value,
+      password: document.getElementById("lpass").value
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.message === "Login success") {
+      alert("Login success");
+      show("uploadPage");
+    } else {
+      alert("Invalid credentials");
+    }
+  })
+  .catch(() => alert("Login failed"));
+}
+
+// UPLOAD
+function upload() {
+  const file = document.getElementById("fileInput").files[0];
+
+  if (!file) {
+    alert("Select file");
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  fetch("/upload", {
+    method: "POST",
+    body: fd
+  })
+  .then(r => r.json())
+  .then(d => {
+
+    // similarity
+    document.getElementById("result").innerText =
+      "Similarity: " + d.similarity;
+
+    // compared files (no undefined)
+    document.getElementById("compare").innerText =
+      d.compared || "Upload one more file to compare";
+
+    // file list
+    const list = document.getElementById("fileList");
+    list.innerHTML = "";
+
+    (d.files || []).forEach(f => {
+      const li = document.createElement("li");
+      li.innerText = f;
+      list.appendChild(li);
+    });
+
+  })
+  .catch(() => alert("Upload failed"));
+}
+</script>
+
+</body>
+</html>
